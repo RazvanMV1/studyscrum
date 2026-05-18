@@ -1,0 +1,28 @@
+﻿services:
+  mongodb:
+    image: mongo:7.0
+    container_name: studyscrum-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: studyscrum
+      MONGO_INITDB_ROOT_PASSWORD: studyscrum123
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - studyscrum-network
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: studyscrum-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - studyscrum-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  studyscrum-network:
+    driver: bridge
