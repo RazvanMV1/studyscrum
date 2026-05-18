@@ -1,0 +1,19 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: identity-service
+  data:
+    mongodb:
+      uri: mongodb://studyscrum:studyscrum123@localhost:27017/studyscrum_identity?authSource=admin
+      database: studyscrum_identity
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
