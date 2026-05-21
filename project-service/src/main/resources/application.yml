@@ -1,0 +1,28 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: project-service
+  data:
+    mongodb:
+      uri: mongodb://studyscrum:studyscrum123@localhost:27017/studyscrum_project?authSource=admin
+      database: studyscrum_project
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    preferIpAddress: false
+    hostname: localhost
+    nonSecurePort: 8082
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
