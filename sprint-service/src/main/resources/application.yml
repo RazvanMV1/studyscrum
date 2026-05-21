@@ -1,0 +1,28 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: sprint-service
+  data:
+    mongodb:
+      uri: mongodb://studyscrum:studyscrum123@localhost:27017/studyscrum_sprint?authSource=admin
+      database: studyscrum_sprint
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    preferIpAddress: false
+    hostname: localhost
+    nonSecurePort: 8083
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always

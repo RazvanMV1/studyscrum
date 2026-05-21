@@ -21,6 +21,10 @@ spring:
               uri: lb://project-service
               predicates:
                 - Path=/projects/**
+            - id: sprint-service
+              uri: lb://sprint-service
+              predicates:
+                - Path=/sprints/**
           globalcors:
             corsConfigurations:
               '[/**]':
