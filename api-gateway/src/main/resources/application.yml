@@ -25,6 +25,14 @@ spring:
               uri: lb://sprint-service
               predicates:
                 - Path=/sprints/**
+            - id: ticket-service
+              uri: lb://ticket-service
+              predicates:
+                - Path=/tickets/**
+            - id: notification-service
+              uri: lb://notification-service
+              predicates:
+                - Path=/notifications/**
           globalcors:
             corsConfigurations:
               '[/**]':
@@ -35,6 +43,7 @@ spring:
                   - POST
                   - PUT
                   - DELETE
+                  - PATCH
                   - OPTIONS
                 allowedHeaders:
                   - "*"
