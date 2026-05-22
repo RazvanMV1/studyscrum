@@ -1,4 +1,6 @@
 ﻿services:
+
+  # ── Infrastructură ───────────────────────────────────────────────
   mongodb:
     image: mongo:7.0
     container_name: studyscrum-mongodb
@@ -11,12 +13,184 @@
       - mongodb_data:/data/db
     networks:
       - studyscrum-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7.2-alpine
     container_name: studyscrum-redis
     ports:
       - "6379:6379"
+    networks:
+      - studyscrum-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Eureka Server ────────────────────────────────────────────────
+  eureka-server:
+    build:
+      context: ./eureka-server
+      dockerfile: Dockerfile
+    container_name: studyscrum-eureka
+    ports:
+      - "8761:8761"
+    networks:
+      - studyscrum-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8761/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # ── Identity Service ─────────────────────────────────────────────
+  identity-service:
+    build:
+      context: ./identity-service
+      dockerfile: Dockerfile
+    container_name: studyscrum-identity
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://studyscrum:studyscrum123@mongodb:27017/studyscrum_identity?authSource=admin
+      SPRING_DATA_MONGODB_DATABASE: studyscrum_identity
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: identity-service
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      JWT_SECRET: ${JWT_SECRET}
+      OAUTH2_REDIRECT_URI: http://localhost:8081/login/oauth2/code/google
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - studyscrum-network
+
+  # ── API Gateway ──────────────────────────────────────────────────
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: studyscrum-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      EUREKA_URL: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: api-gateway
+      JWT_SECRET: ${JWT_SECRET}
+      IDENTITY_SERVICE_URL: http://identity-service:8081
+      FRONTEND_URL: http://localhost:5173
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - studyscrum-network
+
+  # ── Project Service ──────────────────────────────────────────────
+  project-service:
+    build:
+      context: ./project-service
+      dockerfile: Dockerfile
+    container_name: studyscrum-project
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://studyscrum:studyscrum123@mongodb:27017/studyscrum_project?authSource=admin
+      SPRING_DATA_MONGODB_DATABASE: studyscrum_project
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: project-service
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - studyscrum-network
+
+  # ── Sprint Service ───────────────────────────────────────────────
+  sprint-service:
+    build:
+      context: ./sprint-service
+      dockerfile: Dockerfile
+    container_name: studyscrum-sprint
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://studyscrum:studyscrum123@mongodb:27017/studyscrum_sprint?authSource=admin
+      SPRING_DATA_MONGODB_DATABASE: studyscrum_sprint
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: sprint-service
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - studyscrum-network
+
+  # ── Ticket Service ───────────────────────────────────────────────
+  ticket-service:
+    build:
+      context: ./ticket-service
+      dockerfile: Dockerfile
+    container_name: studyscrum-ticket
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://studyscrum:studyscrum123@mongodb:27017/studyscrum_ticket?authSource=admin
+      SPRING_DATA_MONGODB_DATABASE: studyscrum_ticket
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: ticket-service
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - studyscrum-network
+
+  # ── Notification Service ─────────────────────────────────────────
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: studyscrum-notification
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: notification-service
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      redis:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - studyscrum-network
+
+  # ── Frontend ─────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_GATEWAY_URL: http://localhost:8080
+        VITE_NOTIFICATION_WS_URL: http://localhost:8085/ws
+    container_name: studyscrum-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - api-gateway
     networks:
       - studyscrum-network
 
