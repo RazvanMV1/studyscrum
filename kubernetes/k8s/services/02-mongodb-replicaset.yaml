@@ -1,0 +1,246 @@
+# =============================================================================
+# Faza 12 — MongoDB ReplicaSet pe Kubernetes
+#
+# Ce conține acest fișier:
+#   1. Secret cu keyfile pentru autentificare internă între replici
+#   2. ConfigMap cu scriptul de inițializare replica set
+#   3. Headless Service (necesar pentru DNS stabil între poduri StatefulSet)
+#   4. StatefulSet cu 3 replici (1 primary + 2 secondaries)
+#      - PodAntiAffinity → fiecare replică pe alt worker node
+#      - VolumeClaimTemplate → fiecare pod are propriul PVC de 2Gi
+#      - InitContainer → inițializează replica set la primul start
+#   5. Service ClusterIP pentru acces din alte servicii (connection string)
+# =============================================================================
+
+# ── 1. Secret keyfile (autentificare internă replica set) ─────────────────────
+# Keyfile-ul este un secret partajat între toate cele 3 noduri MongoDB.
+# Valoarea de mai jos este un placeholder — scriptul kind-setup.sh
+# îl generează automat cu: openssl rand -base64 756
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mongodb-keyfile
+  namespace: studyscrum
+type: Opaque
+data:
+  # Placeholder — înlocuit automat de scripts/kind-setup-faza12.sh
+  # Pentru înlocuire manuală: openssl rand -base64 756 | base64 -w0
+  keyfile: PLACEHOLDER_GENERAT_DE_SCRIPT
+---
+# ── 2. ConfigMap cu script de inițializare replica set ───────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongodb-init-script
+  namespace: studyscrum
+data:
+  init-replicaset.sh: |
+    #!/bin/bash
+    # Acest script rulează o singură dată pe mongodb-0 (primary)
+    # și inițializează replica set-ul cu cele 3 membri.
+    set -e
+
+    echo "Așteptare MongoDB să fie ready pe mongodb-0..."
+    until mongosh --quiet --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
+      sleep 2
+    done
+
+    echo "Verificare dacă replica set este deja inițializat..."
+    RS_STATUS=$(mongosh --quiet --eval "rs.status().ok" 2>/dev/null || echo "0")
+
+    if [ "$RS_STATUS" = "1" ]; then
+      echo "Replica set deja inițializat. Skip."
+      exit 0
+    fi
+
+    echo "Inițializare replica set studyscrum-rs..."
+    mongosh --eval "
+      rs.initiate({
+        _id: 'studyscrum-rs',
+        members: [
+          { _id: 0, host: 'mongodb-0.mongodb-headless.studyscrum.svc.cluster.local:27017', priority: 2 },
+          { _id: 1, host: 'mongodb-1.mongodb-headless.studyscrum.svc.cluster.local:27017', priority: 1 },
+          { _id: 2, host: 'mongodb-2.mongodb-headless.studyscrum.svc.cluster.local:27017', priority: 1 }
+        ]
+      })
+    "
+
+    echo "Așteptare primary ales (până la 60s)..."
+    for i in $(seq 1 30); do
+      PRIMARY=$(mongosh --quiet --eval "rs.isMaster().ismaster" 2>/dev/null || echo "false")
+      if [ "$PRIMARY" = "true" ]; then
+        echo "Primary ales cu succes."
+        break
+      fi
+      sleep 2
+    done
+
+    echo "Creare user admin..."
+    mongosh --eval "
+      use admin
+      db.createUser({
+        user: 'studyscrum',
+        pwd: '${MONGO_ROOT_PASSWORD}',
+        roles: [{ role: 'root', db: 'admin' }]
+      })
+    " 2>/dev/null || echo "User deja există."
+
+    echo "Inițializare completă."
+---
+# ── 3. Headless Service ───────────────────────────────────────────────────────
+# DNS stabil pentru fiecare pod:
+#   mongodb-0.mongodb-headless.studyscrum.svc.cluster.local
+#   mongodb-1.mongodb-headless.studyscrum.svc.cluster.local
+#   mongodb-2.mongodb-headless.studyscrum.svc.cluster.local
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-headless
+  namespace: studyscrum
+  labels:
+    app: mongodb
+spec:
+  clusterIP: None          # headless — fără IP virtual
+  selector:
+    app: mongodb
+  ports:
+    - port: 27017
+      targetPort: 27017
+---
+# ── 4. StatefulSet ────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb
+  namespace: studyscrum
+  labels:
+    app: mongodb
+spec:
+  serviceName: mongodb-headless   # leagă StatefulSet de Headless Service
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mongodb
+  # Actualizări: o replică pe rând, de la ultima spre prima
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      # ── Anti-affinity: fiecare replică pe alt nod worker ────────────────
+
+      # ── Terminare gracefulă (failover înainte de oprire) ────────────────
+      terminationGracePeriodSeconds: 30
+
+      # ── Inițializare keyfile (permisiuni stricte cerute de MongoDB) ──────
+      initContainers:
+        - name: init-keyfile
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              cp /keyfile-secret/keyfile /keyfile/mongo-keyfile
+              chmod 400 /keyfile/mongo-keyfile
+              chown 999:999 /keyfile/mongo-keyfile
+          volumeMounts:
+            - name: keyfile-secret
+              mountPath: /keyfile-secret
+              readOnly: true
+            - name: keyfile
+              mountPath: /keyfile
+
+      containers:
+        - name: mongodb
+          image: mongo:7.0
+          ports:
+            - containerPort: 27017
+          command:
+            - mongod
+            - --replSet=studyscrum-rs
+            - --keyFile=/keyfile/mongo-keyfile
+            - --auth
+            - --bind_ip_all
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: studyscrum-secrets
+                  key: mongodb-root-username
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: studyscrum-secrets
+                  key: mongodb-root-password
+          volumeMounts:
+            - name: mongodb-data
+              mountPath: /data/db
+            - name: keyfile
+              mountPath: /keyfile
+              readOnly: true
+          livenessProbe:
+            exec:
+              command:
+                - mongosh
+                - --eval
+                - "db.adminCommand('ping')"
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command:
+                - mongosh
+                - --eval
+                - "db.adminCommand('ping')"
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+
+      volumes:
+        - name: keyfile-secret
+          secret:
+            secretName: mongodb-keyfile
+        - name: keyfile
+          emptyDir: {}
+
+  # ── VolumeClaimTemplates — fiecare pod primește propriul PVC ────────────
+  volumeClaimTemplates:
+    - metadata:
+        name: mongodb-data
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests:
+            storage: 2Gi
+---
+# ── 5. Service ClusterIP ──────────────────────────────────────────────────────
+# Connection string pentru servicii: mongodb://user:pass@mongodb:27017/db?authSource=admin&replicaSet=studyscrum-rs
+# Kubernetes face round-robin între cei 3 membri pentru operații de read.
+# Spring Data MongoDB alege automat primary-ul pentru write.
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+  namespace: studyscrum
+  labels:
+    app: mongodb
+spec:
+  selector:
+    app: mongodb
+  ports:
+    - port: 27017
+      targetPort: 27017
+  type: ClusterIP

@@ -11,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
 
@@ -21,6 +22,9 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
     private final UserService userService;
     private final JwtService jwtService;
+
+    @Value("${app.frontend-url:http://localhost}")
+    private String frontendUrl;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -35,7 +39,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         log.info("OAuth2 login successful for user: {}", user.getEmail());
 
-        String redirectUrl = "http://localhost:5173/auth/callback" +
+        String redirectUrl = frontendUrl + "/auth/callback" +
                 "?accessToken=" + accessToken +
                 "&refreshToken=" + refreshToken;
 

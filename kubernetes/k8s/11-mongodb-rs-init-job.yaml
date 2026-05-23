@@ -1,0 +1,88 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mongodb-rs-init
+  namespace: studyscrum
+  labels:
+    app: mongodb-init
+spec:
+  backoffLimit: 5
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: mongo-init
+          image: mongo:7.0
+          env:
+            - name: MONGO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: studyscrum-secrets
+                  key: mongodb-root-password
+          command:
+            - bash
+            - -c
+            - |
+              set -e
+
+              echo "Așteptare ca toate 3 noduri să fie accesibile..."
+              for host in mongodb-0 mongodb-1 mongodb-2; do
+                until mongosh \
+                  --host ${host}.mongodb-headless.studyscrum.svc.cluster.local \
+                  -u studyscrum -p "${MONGO_ROOT_PASSWORD}" \
+                  --authenticationDatabase admin \
+                  --quiet \
+                  --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
+                  echo "  ${host} nu e ready, mai aștept 5s..."
+                  sleep 5
+                done
+                echo "  ${host} OK"
+              done
+
+              echo "Verificare status replica set..."
+              RS_STATUS=$(mongosh \
+                --host mongodb-0.mongodb-headless.studyscrum.svc.cluster.local \
+                -u studyscrum -p "${MONGO_ROOT_PASSWORD}" \
+                --authenticationDatabase admin \
+                --quiet \
+                --eval "try { rs.status().ok } catch(e) { 0 }" 2>/dev/null || echo "0")
+
+              if [ "$RS_STATUS" = "1" ]; then
+                echo "Replica set deja inițializat."
+                exit 0
+              fi
+
+              echo "Inițializare replica set studyscrum-rs..."
+              mongosh \
+                --host mongodb-0.mongodb-headless.studyscrum.svc.cluster.local \
+                -u studyscrum -p "${MONGO_ROOT_PASSWORD}" \
+                --authenticationDatabase admin \
+                --eval "
+                  rs.initiate({
+                    _id: 'studyscrum-rs',
+                    members: [
+                      { _id: 0, host: 'mongodb-0.mongodb-headless.studyscrum.svc.cluster.local:27017', priority: 2 },
+                      { _id: 1, host: 'mongodb-1.mongodb-headless.studyscrum.svc.cluster.local:27017', priority: 1 },
+                      { _id: 2, host: 'mongodb-2.mongodb-headless.studyscrum.svc.cluster.local:27017', priority: 1 }
+                    ]
+                  })
+                "
+
+              echo "Așteptare primary ales (max 90s)..."
+              for i in $(seq 1 45); do
+                IS_PRIMARY=$(mongosh \
+                  --host mongodb-0.mongodb-headless.studyscrum.svc.cluster.local \
+                  -u studyscrum -p "${MONGO_ROOT_PASSWORD}" \
+                  --authenticationDatabase admin \
+                  --quiet \
+                  --eval "rs.isMaster().ismaster" 2>/dev/null || echo "false")
+                if [ "$IS_PRIMARY" = "true" ]; then
+                  echo "  mongodb-0 este PRIMARY."
+                  break
+                fi
+                echo "  Așteptare primary... ($i/45)"
+                sleep 2
+              done
+
+              echo "MongoDB ReplicaSet inițializat cu succes!"
