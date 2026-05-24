@@ -156,7 +156,7 @@ spec:
 
       containers:
         - name: mongodb
-          image: mongo:7.0
+          image: mongo:6.0
           ports:
             - containerPort: 27017
           command:

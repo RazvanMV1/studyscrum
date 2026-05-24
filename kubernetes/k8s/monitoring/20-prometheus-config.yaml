@@ -1,0 +1,79 @@
+# =============================================================================
+# Prometheus — ConfigMap cu configurație scrape
+# Faza 17: Observabilitate
+#
+# Scrape-uiește metricile de la toate serviciile Spring Boot Actuator
+# și de la MongoDB (via mongodb-exporter).
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: studyscrum
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    scrape_configs:
+      # ── Prometheus însuși ──────────────────────────────────────────────────
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+
+      # ── Eureka Server ──────────────────────────────────────────────────────
+      - job_name: 'eureka-server'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['eureka-server:8761']
+            labels:
+              service: 'eureka-server'
+
+      # ── API Gateway ────────────────────────────────────────────────────────
+      - job_name: 'api-gateway'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['api-gateway:8080']
+            labels:
+              service: 'api-gateway'
+
+      # ── Identity Service ───────────────────────────────────────────────────
+      - job_name: 'identity-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['identity-service:8081']
+            labels:
+              service: 'identity-service'
+
+      # ── Project Service ────────────────────────────────────────────────────
+      - job_name: 'project-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['project-service:8082']
+            labels:
+              service: 'project-service'
+
+      # ── Sprint Service ─────────────────────────────────────────────────────
+      - job_name: 'sprint-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['sprint-service:8083']
+            labels:
+              service: 'sprint-service'
+
+      # ── Ticket Service ─────────────────────────────────────────────────────
+      - job_name: 'ticket-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['ticket-service:8084']
+            labels:
+              service: 'ticket-service'
+
+      # ── Notification Service ───────────────────────────────────────────────
+      - job_name: 'notification-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['notification-service:8085']
+            labels:
+              service: 'notification-service'
