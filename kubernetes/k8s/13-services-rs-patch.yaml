@@ -1,0 +1,99 @@
+# =============================================================================
+# Faza 12 — Patch servicii Spring Boot pentru MongoDB ReplicaSet
+#
+# Aplică peste manifestele din Faza 11 pentru a actualiza
+# SPRING_DATA_MONGODB_URI la connection string cu replicaSet.
+#
+# Utilizare:
+#   kubectl patch deployment identity-service -n studyscrum --patch-file k8s/13-services-rs-patch.yaml
+#
+# SAU aplică direct prin kind-setup-faza12.sh (recomandat).
+# =============================================================================
+
+# ── Identity Service ──────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identity-service
+  namespace: studyscrum
+spec:
+  template:
+    spec:
+      containers:
+        - name: identity-service
+          env:
+            - name: MONGO_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: studyscrum-secrets
+                  key: mongodb-root-password
+            - name: SPRING_DATA_MONGODB_URI
+              value: "mongodb://studyscrum:$(MONGO_PASS)@mongodb-0.mongodb-headless.studyscrum.svc.cluster.local:27017,mongodb-1.mongodb-headless.studyscrum.svc.cluster.local:27017,mongodb-2.mongodb-headless.studyscrum.svc.cluster.local:27017/studyscrum_identity?authSource=admin&replicaSet=studyscrum-rs"
+            - name: SPRING_DATA_MONGODB_DATABASE
+              value: studyscrum_identity
+---
+# ── Project Service ───────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: project-service
+  namespace: studyscrum
+spec:
+  template:
+    spec:
+      containers:
+        - name: project-service
+          env:
+            - name: MONGO_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: studyscrum-secrets
+                  key: mongodb-root-password
+            - name: SPRING_DATA_MONGODB_URI
+              value: "mongodb://studyscrum:$(MONGO_PASS)@mongodb-0.mongodb-headless.studyscrum.svc.cluster.local:27017,mongodb-1.mongodb-headless.studyscrum.svc.cluster.local:27017,mongodb-2.mongodb-headless.studyscrum.svc.cluster.local:27017/studyscrum_project?authSource=admin&replicaSet=studyscrum-rs"
+            - name: SPRING_DATA_MONGODB_DATABASE
+              value: studyscrum_project
+---
+# ── Sprint Service ────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sprint-service
+  namespace: studyscrum
+spec:
+  template:
+    spec:
+      containers:
+        - name: sprint-service
+          env:
+            - name: MONGO_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: studyscrum-secrets
+                  key: mongodb-root-password
+            - name: SPRING_DATA_MONGODB_URI
+              value: "mongodb://studyscrum:$(MONGO_PASS)@mongodb-0.mongodb-headless.studyscrum.svc.cluster.local:27017,mongodb-1.mongodb-headless.studyscrum.svc.cluster.local:27017,mongodb-2.mongodb-headless.studyscrum.svc.cluster.local:27017/studyscrum_sprint?authSource=admin&replicaSet=studyscrum-rs"
+            - name: SPRING_DATA_MONGODB_DATABASE
+              value: studyscrum_sprint
+---
+# ── Ticket Service ────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ticket-service
+  namespace: studyscrum
+spec:
+  template:
+    spec:
+      containers:
+        - name: ticket-service
+          env:
+            - name: MONGO_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: studyscrum-secrets
+                  key: mongodb-root-password
+            - name: SPRING_DATA_MONGODB_URI
+              value: "mongodb://studyscrum:$(MONGO_PASS)@mongodb-0.mongodb-headless.studyscrum.svc.cluster.local:27017,mongodb-1.mongodb-headless.studyscrum.svc.cluster.local:27017,mongodb-2.mongodb-headless.studyscrum.svc.cluster.local:27017/studyscrum_ticket?authSource=admin&replicaSet=studyscrum-rs"
+            - name: SPRING_DATA_MONGODB_DATABASE
+              value: studyscrum_ticket

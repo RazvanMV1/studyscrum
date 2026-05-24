@@ -6,7 +6,7 @@ spring:
     name: identity-service
   data:
     mongodb:
-      uri: mongodb://studyscrum:studyscrum123@localhost:27017/studyscrum_identity?authSource=admin
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb://studyscrum:studyscrum123@mongodb:27017/studyscrum_identity?authSource=admin}
       database: studyscrum_identity
   security:
     oauth2:
@@ -18,7 +18,7 @@ spring:
             scope:
               - email
               - profile
-            redirect-uri: ${OAUTH2_REDIRECT_URI:http://localhost:8081/login/oauth2/code/google}
+            redirect-uri: ${OAUTH2_REDIRECT_URI:http://localhost/login/oauth2/code/google}
 
 jwt:
   secret: ${JWT_SECRET}

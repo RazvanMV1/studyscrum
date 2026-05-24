@@ -1,0 +1,37 @@
+# =============================================================================
+# ConfigMap cu connection strings MongoDB pentru ReplicaSet
+#
+# Diferența față de Faza 11 (single-node):
+#   ÎNAINTE: mongodb://user:pass@mongodb:27017/db?authSource=admin
+#   ACUM:    mongodb://user:pass@mongodb-0...:27017,mongodb-1...:27017,mongodb-2...:27017/db
+#              ?authSource=admin&replicaSet=studyscrum-rs&readPreference=secondaryPreferred
+#
+# Spring Data MongoDB detectează automat primary-ul și failover-ul.
+# readPreference=secondaryPreferred → read-urile non-critice merg pe secondary.
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongodb-connection-config
+  namespace: studyscrum
+data:
+  # Hosturi pentru replica set (separate prin virgulă)
+  mongodb-hosts: >-
+    mongodb-0.mongodb-headless.studyscrum.svc.cluster.local:27017,
+    mongodb-1.mongodb-headless.studyscrum.svc.cluster.local:27017,
+    mongodb-2.mongodb-headless.studyscrum.svc.cluster.local:27017
+
+  replica-set-name: "studyscrum-rs"
+
+  # Connection string complet pentru identity-service
+  mongodb-uri-identity: >-
+    mongodb://studyscrum:$(MONGO_PASS)@mongodb-0.mongodb-headless.studyscrum.svc.cluster.local:27017,mongodb-1.mongodb-headless.studyscrum.svc.cluster.local:27017,mongodb-2.mongodb-headless.studyscrum.svc.cluster.local:27017/studyscrum_identity?authSource=admin&replicaSet=studyscrum-rs
+
+  mongodb-uri-project: >-
+    mongodb://studyscrum:$(MONGO_PASS)@mongodb-0.mongodb-headless.studyscrum.svc.cluster.local:27017,mongodb-1.mongodb-headless.studyscrum.svc.cluster.local:27017,mongodb-2.mongodb-headless.studyscrum.svc.cluster.local:27017/studyscrum_project?authSource=admin&replicaSet=studyscrum-rs
+
+  mongodb-uri-sprint: >-
+    mongodb://studyscrum:$(MONGO_PASS)@mongodb-0.mongodb-headless.studyscrum.svc.cluster.local:27017,mongodb-1.mongodb-headless.studyscrum.svc.cluster.local:27017,mongodb-2.mongodb-headless.studyscrum.svc.cluster.local:27017/studyscrum_sprint?authSource=admin&replicaSet=studyscrum-rs
+
+  mongodb-uri-ticket: >-
+    mongodb://studyscrum:$(MONGO_PASS)@mongodb-0.mongodb-headless.studyscrum.svc.cluster.local:27017,mongodb-1.mongodb-headless.studyscrum.svc.cluster.local:27017,mongodb-2.mongodb-headless.studyscrum.svc.cluster.local:27017/studyscrum_ticket?authSource=admin&replicaSet=studyscrum-rs
