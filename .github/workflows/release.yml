@@ -68,8 +68,8 @@ jobs:
           npm ci
           npm run build
         env:
-          VITE_API_GATEWAY_URL: http://localhost/api
-          VITE_NOTIFICATION_WS_URL: ws://localhost/ws
+        VITE_API_GATEWAY_URL: http://34.116.171.134.nip.io/api
+        VITE_NOTIFICATION_WS_URL: ws://34.116.171.134.nip.io/ws
 
   # ===========================================================================
   # JOB 2: Build + Push imagini cu tag versiune
@@ -99,8 +99,8 @@ jobs:
           - service: frontend
             context: ./frontend
             build-args: |
-              VITE_API_GATEWAY_URL=http://localhost/api
-              VITE_NOTIFICATION_WS_URL=ws://localhost/ws
+          VITE_API_GATEWAY_URL=http://34.116.171.134.nip.io/api
+          VITE_NOTIFICATION_WS_URL=ws://34.116.171.134.nip.io/ws
 
     steps:
       - name: Checkout cod
