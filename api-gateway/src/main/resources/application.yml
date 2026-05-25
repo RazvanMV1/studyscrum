@@ -10,7 +10,7 @@ spring:
         webflux:
           routes:
             - id: identity-service-oauth2
-              uri: ${IDENTITY_SERVICE_URL:http://localhost:8081}
+              uri: lb://identity-service
               predicates:
                 - Path=/login/**,/oauth2/**
             - id: identity-service
