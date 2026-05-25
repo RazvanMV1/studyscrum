@@ -1,0 +1,28 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: ticket-service
+  data:
+    mongodb:
+      uri: mongodb://studyscrum:studyscrum123@localhost:27017/studyscrum_ticket?authSource=admin
+      database: studyscrum_ticket
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    preferIpAddress: false
+    hostname: localhost
+    nonSecurePort: 8084
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always

@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-//import type { AuthState, User, AuthTokens } from '../types/auth';
-import type { AuthState, AuthTokens } from '../types/auth';
+import type { AuthState, User, AuthTokens } from '../types/auth';
 import { getMe } from '../api/auth';
 
 interface AuthContextType extends AuthState {
@@ -20,7 +19,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     isLoading: true,
   });
 
-  // La mount — verifică dacă există tokens salvate în localStorage
   useEffect(() => {
     const initAuth = async () => {
       try {
@@ -29,9 +27,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         if (tokensRaw && userRaw) {
           const tokens: AuthTokens = JSON.parse(tokensRaw);
-          //const user: User = JSON.parse(userRaw);
+          const user: User = JSON.parse(userRaw);
 
-          // Verifică că tokenul mai este valid
           const freshUser = await getMe();
 
           setState({
