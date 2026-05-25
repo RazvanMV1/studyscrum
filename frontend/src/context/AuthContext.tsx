@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import type { AuthState, User, AuthTokens } from '../types/auth';
+import type { AuthState, AuthTokens } from '../types/auth';
 import { getMe } from '../api/auth';
 
 interface AuthContextType extends AuthState {
@@ -27,7 +27,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         if (tokensRaw && userRaw) {
           const tokens: AuthTokens = JSON.parse(tokensRaw);
-          const user: User = JSON.parse(userRaw);
 
           const freshUser = await getMe();
 
