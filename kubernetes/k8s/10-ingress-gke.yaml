@@ -25,20 +25,6 @@ spec:
   rules:
     - http:
         paths:
-          - path: /login(/|$)(.*)
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: api-gateway
-                port:
-                  number: 8080
-          - path: /oauth2(/|$)(.*)
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: api-gateway
-                port:
-                  number: 8080
           - path: /api(/|$)(.*)
             pathType: ImplementationSpecific
             backend:
