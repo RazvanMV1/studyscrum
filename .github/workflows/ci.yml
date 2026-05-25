@@ -37,6 +37,8 @@ jobs:
           - identity-service
           - project-service
           - notification-service
+          - sprint-service
+          - ticket-service
 
     steps:
       - name: Checkout cod
@@ -124,6 +126,10 @@ jobs:
             context: ./notification-service
           - service: frontend
             context: ./frontend
+          - service: sprint-service
+            context: ./sprint-service
+          - service: ticket-service
+            context: ./ticket-service
             build-args: |
               VITE_API_GATEWAY_URL=http://34.116.171.134.nip.io/api
               VITE_NOTIFICATION_WS_URL=ws://34.116.171.134.nip.io/ws
