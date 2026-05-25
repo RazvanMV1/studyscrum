@@ -97,8 +97,8 @@ jobs:
         working-directory: frontend
         run: npm run build
         env:
-          VITE_API_GATEWAY_URL: "http://8.233.216.86.nip.io/api"
-          VITE_NOTIFICATION_WS_URL: "ws://8.233.216.86.nip.io/ws"
+          VITE_API_GATEWAY_URL: "http://34.116.171.134.nip.io/api"
+          VITE_NOTIFICATION_WS_URL: "ws://34.116.171.134.nip.io/ws"
 
   docker:
     name: Docker — ${{ matrix.service }}
