@@ -104,8 +104,8 @@ jobs:
         working-directory: frontend
         run: npm run build
         env:
-          VITE_API_GATEWAY_URL: http://localhost/api
-          VITE_NOTIFICATION_WS_URL: ws://localhost/ws
+          VITE_API_GATEWAY_URL=http://8.233.216.86.nip.io/api
+          VITE_NOTIFICATION_WS_URL=ws://8.233.216.86.nip.io/ws
 
   # ===========================================================================
   # JOB 3: Build + Push imagini Docker
