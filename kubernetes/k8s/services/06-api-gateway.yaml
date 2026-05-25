@@ -34,7 +34,7 @@ spec:
             - name: IDENTITY_SERVICE_URL
               value: "http://identity-service:8081"
             - name: FRONTEND_URL
-              value: "http://8.233.216.86.nip.io"
+              value: "http://34.116.171.134.nip.io"
           livenessProbe:
             httpGet:
               path: /actuator/health

@@ -47,9 +47,9 @@ spec:
                   name: studyscrum-secrets
                   key: jwt-secret
             - name: OAUTH2_REDIRECT_URI
-              value: "http://8.233.216.86.nip.io/login/oauth2/code/google"
+              value: "http://34.116.171.134.nip.io/login/oauth2/code/google"
             - name: APP_FRONTEND_URL
-              value: "http://8.233.216.86.nip.io"
+              value: "http://34.116.171.134.nip.io"
           livenessProbe:
             httpGet:
               path: /actuator/health
