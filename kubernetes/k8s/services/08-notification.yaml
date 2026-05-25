@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: notification-service
-          image: studyscrum/notification-service:latest
-          imagePullPolicy: Never
+          image: ghcr.io/razvanmv1/studyscrum-notification-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8085
           env:
@@ -66,4 +66,4 @@ spec:
   ports:
     - port: 8085
       targetPort: 8085
-  type: ClusterIP
+  type: NodePort

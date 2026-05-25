@@ -1,0 +1,62 @@
+# =============================================================================
+# Ingress GKE
+# Pe GKE în loc de Nginx Ingress local folosim GKE Ingress care
+# creează automat un Google Cloud Load Balancer cu IP extern.
+#
+# IMPORTANT: După kubectl apply, rulează:
+#   kubectl get ingress -n studyscrum
+# și copiază EXTERNAL_IP — acela e URL-ul aplicației tale.
+# Înlocuiește INLOCUIESTE_CU_IP_EXTERN din 05-identity.yaml și 06-api-gateway.yaml
+# cu acel IP.
+# =============================================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: studyscrum-ingress
+  namespace: studyscrum
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /login(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: api-gateway
+                port:
+                  number: 8080
+          - path: /oauth2(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: api-gateway
+                port:
+                  number: 8080
+          - path: /api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: api-gateway
+                port:
+                  number: 8080
+          - path: /ws(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: notification-service
+                port:
+                  number: 8085
+          - path: /()(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80

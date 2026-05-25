@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: identity-service
-          image: studyscrum/identity-service:latest
-          imagePullPolicy: Never
+          image: ghcr.io/razvanmv1/studyscrum-identity-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8081
           env:
@@ -47,7 +47,9 @@ spec:
                   name: studyscrum-secrets
                   key: jwt-secret
             - name: OAUTH2_REDIRECT_URI
-              value: "http://localhost/login/oauth2/code/google"
+              value: "http://8.233.216.86.nip.io/login/oauth2/code/google"
+            - name: APP_FRONTEND_URL
+              value: "http://8.233.216.86.nip.io"
           livenessProbe:
             httpGet:
               path: /actuator/health

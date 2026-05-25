@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: eureka-server
-          image: studyscrum/eureka-server:latest
-          imagePullPolicy: Never          # imagine locală încărcată cu kind load
+          image: ghcr.io/razvanmv1/studyscrum-eureka-server:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8761
           livenessProbe:
@@ -27,7 +27,6 @@ spec:
               port: 8761
             initialDelaySeconds: 40
             periodSeconds: 15
-            timeoutSeconds: 5
             failureThreshold: 3
           readinessProbe:
             httpGet:
@@ -35,7 +34,6 @@ spec:
               port: 8761
             initialDelaySeconds: 30
             periodSeconds: 10
-            timeoutSeconds: 5
           resources:
             requests:
               memory: "256Mi"

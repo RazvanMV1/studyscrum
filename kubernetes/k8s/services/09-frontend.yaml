@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: studyscrum/frontend:latest
-          imagePullPolicy: Never
+          image: ghcr.io/razvanmv1/studyscrum-frontend:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 80
           livenessProbe:
@@ -52,4 +52,4 @@ spec:
   ports:
     - port: 80
       targetPort: 80
-  type: ClusterIP
+  type: NodePort

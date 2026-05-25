@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: project-service
-          image: studyscrum/project-service:latest
-          imagePullPolicy: Never
+          image: ghcr.io/razvanmv1/studyscrum-project-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8082
           env:
@@ -83,8 +83,8 @@ spec:
     spec:
       containers:
         - name: sprint-service
-          image: studyscrum/sprint-service:latest
-          imagePullPolicy: Never
+          image: ghcr.io/razvanmv1/studyscrum-sprint-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8083
           env:
@@ -149,8 +149,8 @@ spec:
     spec:
       containers:
         - name: ticket-service
-          image: studyscrum/ticket-service:latest
-          imagePullPolicy: Never
+          image: ghcr.io/razvanmv1/studyscrum-ticket-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8084
           env:
